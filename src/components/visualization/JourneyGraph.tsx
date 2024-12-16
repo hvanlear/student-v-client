@@ -45,6 +45,9 @@ const JourneyGraph = ({ courses }: JourneyGraphProps) => {
         grade: course.grade,
         term: course.term,
         description: course.description,
+        categories: course.categories,
+        requirements: course.requirements, // Add this
+        isFlexible: course.isFlexible, // Add this
       },
     }));
   }, [courses]);

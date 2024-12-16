@@ -1,7 +1,18 @@
 // src/types/student.ts
 export type CourseStatus = 'completed' | 'in-progress' | 'planned' | 'not-started';
-
 export type Grade = 'A' | 'B' | 'C' | 'D' | 'F' | 'IP' | 'N/A';
+
+export type CourseCategory =
+  | 'Gen Ed'
+  | 'WCOB Lower Level Core'
+  | 'WCOB Upper Level Core'
+  | 'Major Requirement'
+  | 'Free Elective';
+
+export interface CourseRequirement {
+  minGrade?: string; // For cases like "C-" requirement
+  majorGPA?: boolean; // For courses that count in major GPA
+}
 
 export interface CourseNode {
   id: string;
@@ -10,27 +21,14 @@ export interface CourseNode {
   credits: number;
   prerequisites: string[];
   status: CourseStatus;
+  categories: CourseCategory[];
+  requirements?: CourseRequirement;
+  isFlexible?: boolean; // For Gen Ed choices
+  allowedChoices?: string[]; // For flexible requirements
+
   // Optional fields
   grade?: Grade;
   term?: string;
   description?: string;
-  completionDate?: string; // Added this field
-}
-
-export interface StudentProgress {
-  studentId: string;
-  program: string;
-  courses: CourseNode[];
-}
-
-// Helper type for node data passed to ReactFlow
-export interface CourseNodeData {
-  code: string;
-  title: string;
-  status: CourseStatus;
-  credits: number;
-  grade?: Grade;
-  term?: string;
-  description?: string;
-  completionDate?: string; // Added this field here as well
+  completionDate?: string;
 }
