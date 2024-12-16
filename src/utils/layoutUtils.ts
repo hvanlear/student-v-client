@@ -1,4 +1,3 @@
-// src/utils/layoutUtils.ts
 import type { CourseNode } from '../types/student';
 
 interface Position {
