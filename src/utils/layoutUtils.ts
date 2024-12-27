@@ -1,3 +1,4 @@
+// src/utils/layoutUtils.ts
 import type { CourseNode } from '../types/student';
 
 interface Position {
@@ -18,6 +19,7 @@ interface LayoutConfig {
   nodeWidth: number;
   nodeHeight: number;
   padding: number;
+  semesterSpacing: number;
 }
 
 const DEFAULT_CONFIG: LayoutConfig = {
@@ -26,7 +28,37 @@ const DEFAULT_CONFIG: LayoutConfig = {
   nodeWidth: 200,
   nodeHeight: 80,
   padding: 20,
+  semesterSpacing: 100,
 };
+
+function groupBySemester(courses: CourseNode[]): Map<string, CourseNode[]> {
+  const semesterMap = new Map<string, CourseNode[]>();
+
+  const semesterOrder = [
+    'Semester One',
+    'Semester Two',
+    'Semester Three',
+    'Semester Four',
+    'Semester Five',
+    'Semester Six',
+    'Semester Seven',
+    'Semester Eight',
+  ];
+
+  semesterOrder.forEach((semester) => {
+    semesterMap.set(semester, []);
+  });
+
+  courses.forEach((course) => {
+    if (course.term) {
+      const coursesInSemester = semesterMap.get(course.term) || [];
+      coursesInSemester.push(course);
+      semesterMap.set(course.term, coursesInSemester);
+    }
+  });
+
+  return semesterMap;
+}
 
 function detectOverlap(node1: NodeWithLayout, node2: NodeWithLayout): boolean {
   return (
@@ -35,23 +67,34 @@ function detectOverlap(node1: NodeWithLayout, node2: NodeWithLayout): boolean {
   );
 }
 
-function adjustNodePosition(
-  node: NodeWithLayout,
-  allNodes: NodeWithLayout[],
-  config: LayoutConfig
-): void {
-  const overlappingNodes = allNodes.filter((other) => other !== node && detectOverlap(node, other));
+function adjustNodePositionsInSemester(nodes: NodeWithLayout[], config: LayoutConfig): void {
+  let hasOverlap = true;
+  let iterations = 0;
+  const MAX_ITERATIONS = 100;
 
-  if (overlappingNodes.length === 0) return;
+  while (hasOverlap && iterations < MAX_ITERATIONS) {
+    hasOverlap = false;
+    iterations++;
 
-  // Try to move horizontally first
-  const moveRight = overlappingNodes.some((other) => other.position.x <= node.position.x);
-
-  if (moveRight) {
-    node.position.x += config.horizontalSpacing / 2;
-  } else {
-    node.position.x -= config.horizontalSpacing / 2;
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        if (detectOverlap(nodes[i], nodes[j])) {
+          hasOverlap = true;
+          const pushDistance = config.horizontalSpacing * 0.1;
+          nodes[i].position.x -= pushDistance;
+          nodes[j].position.x += pushDistance;
+        }
+      }
+    }
   }
+
+  // Center the nodes after adjusting positions
+  const minX = Math.min(...nodes.map((n) => n.position.x));
+  const maxX = Math.max(...nodes.map((n) => n.position.x));
+  const centerOffset = (minX + maxX) / 2;
+  nodes.forEach((node) => {
+    node.position.x -= centerOffset;
+  });
 }
 
 export const calculateNodeLayout = (
@@ -59,97 +102,72 @@ export const calculateNodeLayout = (
   config: Partial<LayoutConfig> = {}
 ): NodeWithLayout[] => {
   const finalConfig = { ...DEFAULT_CONFIG, ...config };
-  const nodeMap = new Map<string, NodeWithLayout>();
+  const semesterMap = groupBySemester(courses);
+  const allNodes: NodeWithLayout[] = [];
+  let currentY = finalConfig.padding;
 
-  // Initialize nodes with positions and dimensions
-  courses.forEach((course) => {
-    nodeMap.set(course.id, {
-      ...course,
-      position: { x: 0, y: 0 },
-      level: undefined,
-      width: finalConfig.nodeWidth,
-      height: finalConfig.nodeHeight,
-    });
-  });
+  // Process each semester
+  Array.from(semesterMap.entries()).forEach(([_semester, semesterCourses]) => {
+    if (semesterCourses.length === 0) return;
 
-  // Calculate levels (y-positions) based on prerequisites
-  const assignLevels = (nodeId: string, currentLevel = 0): void => {
-    const node = nodeMap.get(nodeId);
-    if (!node) return;
+    // Calculate initial positions
+    const semesterWidth = semesterCourses.length * finalConfig.horizontalSpacing;
+    const startX = -semesterWidth / 2;
+    const semesterNodes: NodeWithLayout[] = [];
 
-    if (node.level === undefined || currentLevel > node.level) {
-      node.level = currentLevel;
-    }
-
-    courses.forEach((course) => {
-      if (course.prerequisites.includes(nodeId)) {
-        assignLevels(course.id, currentLevel + 1);
-      }
-    });
-  };
-
-  // Start with nodes that have no prerequisites
-  courses
-    .filter((course) => course.prerequisites.length === 0)
-    .forEach((course) => {
-      assignLevels(course.id);
-    });
-
-  // Group nodes by level with explicit array initialization
-  const nodesByLevel = Array.from(nodeMap.values()).reduce<NodeWithLayout[][]>((acc, node) => {
-    const level = node.level ?? 0;
-    // Initialize the array for this level if it doesn't exist
-    acc[level] = acc[level] || [];
-    acc[level].push(node);
-    return acc;
-  }, []);
-
-  // Initial positioning
-  nodesByLevel.forEach((level, levelIndex) => {
-    const levelWidth = level.length * finalConfig.horizontalSpacing;
-    const startX = -levelWidth / 2;
-
-    level.forEach((node, nodeIndex) => {
-      node.position = {
-        x: startX + nodeIndex * finalConfig.horizontalSpacing,
-        y: levelIndex * finalConfig.verticalSpacing,
+    // Position each course in the semester
+    semesterCourses.forEach((course, index) => {
+      const node: NodeWithLayout = {
+        ...course,
+        position: {
+          x: startX + index * finalConfig.horizontalSpacing,
+          y: currentY,
+        },
+        width: finalConfig.nodeWidth,
+        height: finalConfig.nodeHeight,
       };
-    });
-  });
-
-  // Adjust positions to avoid overlaps
-  const allNodes = Array.from(nodeMap.values());
-  let iterations = 0;
-  const MAX_ITERATIONS = 100;
-
-  let shouldContinue = true;
-  while (shouldContinue && iterations < MAX_ITERATIONS) {
-    shouldContinue = false;
-
-    nodesByLevel.forEach((level) => {
-      level.forEach((node) => {
-        const hasOverlap = allNodes.some((other) => other !== node && detectOverlap(node, other));
-
-        if (hasOverlap) {
-          adjustNodePosition(node, allNodes, finalConfig);
-          shouldContinue = true;
-        }
-      });
+      semesterNodes.push(node);
+      allNodes.push(node);
     });
 
-    iterations += 1;
-  }
+    // Adjust positions for this semester's nodes
+    adjustNodePositionsInSemester(semesterNodes, finalConfig);
 
-  // Center nodes horizontally after all adjustments
-  nodesByLevel.forEach((level) => {
-    const minX = Math.min(...level.map((node) => node.position.x));
-    const maxX = Math.max(...level.map((node) => node.position.x));
-    const centerOffset = (minX + maxX) / 2;
-
-    level.forEach((node) => {
-      node.position.x -= centerOffset;
-    });
+    // Move to next semester vertical position
+    currentY += finalConfig.verticalSpacing + finalConfig.semesterSpacing;
   });
 
   return allNodes;
 };
+
+export const calculateSemesterLabels = (
+  courses: CourseNode[],
+  config: LayoutConfig
+): SemesterLabel[] => {
+  const semesterMap = groupBySemester(courses);
+  const labels: SemesterLabel[] = [];
+  let currentY = config.padding;
+
+  Array.from(semesterMap.entries()).forEach(([semester, semesterCourses]) => {
+    if (semesterCourses.length === 0) return;
+
+    labels.push({
+      id: `label-${semester}`,
+      text: semester,
+      position: {
+        x: -config.horizontalSpacing * 2,
+        y: currentY + config.nodeHeight / 2,
+      },
+    });
+
+    currentY += config.verticalSpacing + config.semesterSpacing;
+  });
+
+  return labels;
+};
+
+export interface SemesterLabel {
+  id: string;
+  text: string;
+  position: Position;
+}

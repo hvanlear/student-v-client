@@ -29,8 +29,9 @@ const JourneyGraph = ({ courses }: JourneyGraphProps) => {
       horizontalSpacing: 400,
       verticalSpacing: 200,
       nodeWidth: 250,
-      nodeHeight: 100,
+      nodeHeight: 150,
       padding: 50,
+      semesterSpacing: 150,
     });
 
     return layoutNodes.map((course) => ({
@@ -42,12 +43,12 @@ const JourneyGraph = ({ courses }: JourneyGraphProps) => {
         title: course.title,
         status: course.status,
         credits: course.credits,
+        categories: course.categories,
         grade: course.grade,
         term: course.term,
         description: course.description,
-        categories: course.categories,
-        requirements: course.requirements, // Add this
-        isFlexible: course.isFlexible, // Add this
+        requirements: course.requirements,
+        isFlexible: course.isFlexible,
       },
     }));
   }, [courses]);
@@ -61,11 +62,8 @@ const JourneyGraph = ({ courses }: JourneyGraphProps) => {
           target: course.id,
           type: 'smoothstep',
           animated: true,
-          label: 'prerequisite',
-          labelStyle: { fill: '#9ca3af', fontSize: 12 },
-          labelBgStyle: { fill: '#1f2937', fillOpacity: 0.7 },
           style: {
-            stroke: '#6366f1', // Indigo color for better visibility
+            stroke: '#6366f1',
             strokeWidth: 2,
           },
           markerEnd: {
@@ -76,6 +74,11 @@ const JourneyGraph = ({ courses }: JourneyGraphProps) => {
           },
         }))
       ),
+    [courses]
+  );
+
+  const totalCredits = useMemo(
+    () => courses.reduce((sum, course) => sum + course.credits, 0),
     [courses]
   );
 
@@ -98,9 +101,15 @@ const JourneyGraph = ({ courses }: JourneyGraphProps) => {
         <Background gap={12} size={1} />
         <Controls />
         <Tooltip id="course-tooltip" className="z-50 max-w-md" place="top" delayShow={200} />
-        <Panel position="top-left" className="bg-gray-800 p-2 rounded">
-          <div className="text-white text-sm">
-            {courses.length} Courses • {edges.length} Prerequisites
+
+        <Panel position="top-left" className="bg-gray-800 p-4 rounded-lg shadow-lg">
+          <div className="text-white space-y-2">
+            <div className="font-medium">Degree Progress</div>
+            <div className="text-sm">
+              <div>Total Courses: {courses.length}</div>
+              <div>Total Credits: {totalCredits}</div>
+              <div>Prerequisites: {edges.length}</div>
+            </div>
           </div>
         </Panel>
       </ReactFlow>

@@ -1,4 +1,4 @@
-// src/components/visualization/CourseNode.tsx
+
 import { memo } from 'react';
 import { Handle, type NodeProps, Position } from 'reactflow';
 import type { CourseCategory, CourseStatus, Grade } from '../../types/student';
@@ -56,6 +56,9 @@ const CourseNode = ({ data }: NodeProps<CourseNodeData>) => {
         {/* Main content */}
         <div className="p-4">
           {/* Header with code and requirements */}
+          <div className="flex justify-between text-xs text-gray-400">
+            {data.term && <span>{data.term}</span>}
+          </div>
           <div className="flex justify-between items-start mb-2">
             <div className="font-medium text-gray-200">{data.code}</div>
             <div className="flex flex-col items-end">
@@ -96,7 +99,6 @@ const CourseNode = ({ data }: NodeProps<CourseNodeData>) => {
           {/* Details */}
           <div className="flex justify-between text-xs text-gray-400">
             <span>{data.credits} credits</span>
-            {data.term && <span>{data.term}</span>}
           </div>
 
           {/* Major GPA Indicator */}

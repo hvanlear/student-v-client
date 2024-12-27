@@ -12,7 +12,7 @@ export const degreeProgram: CourseNode[] = [
     requirements: {
       minGrade: 'C-',
     },
-    status: 'not-started',
+    status: 'in-progress',
     term: 'Semester One',
     description: 'Gen Ed Quantitative Literacy requirement',
   },
@@ -24,7 +24,7 @@ export const degreeProgram: CourseNode[] = [
     prerequisites: [],
     categories: ['Gen Ed'],
     isFlexible: true,
-    status: 'not-started',
+    status: 'planned',
     term: 'Semester One',
   },
   {
@@ -35,7 +35,8 @@ export const degreeProgram: CourseNode[] = [
     prerequisites: [],
     categories: ['Gen Ed'],
     isFlexible: true,
-    status: 'not-started',
+    status: 'completed',
+    grade: 'A', 
     term: 'Semester One',
   },
   {
