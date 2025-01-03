@@ -9,10 +9,10 @@ import { Link, Outlet } from 'react-router-dom';
 export default function AppLayout() {
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b">
-        <nav className="container mx-auto px-4">
-          <NavigationMenu>
-            <NavigationMenuList>
+      <header className="border-b w-full">
+        <nav className="w-full px-4">
+          <NavigationMenu className="w-full">
+            <NavigationMenuList className="w-full justify-between">
               <NavigationMenuItem>
                 <Link
                   to="/"
@@ -33,7 +33,7 @@ export default function AppLayout() {
           </NavigationMenu>
         </nav>
       </header>
-      <main className="container mx-auto px-4 py-8">
+      <main className=" mx-auto px-4 py-8">
         <Outlet />
       </main>
     </div>
